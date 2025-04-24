@@ -1,22 +1,21 @@
 import streamlit as st
 import os
+import threading
+import time
 from downloader import download_video
 from analyzer import detect_highlight_times, detect_fight_bounds
 from clipper import crop_and_export_clips, trim_video
-import threading
-import time
 
 st.set_page_config(page_title="Boxing Clip Generator", layout="centered")
 st.title("🥊 Boxing Clip Generator")
 
 url = st.text_input("Paste YouTube Video URL below:")
 
-# Step tracker values
+# Total step count for overall progress
 total_steps = 5
 step = 0
-
-# Show initial progress bar
 progress_bar = st.progress(0)
+
 def update_progress():
     progress_bar.progress(step / total_steps)
 
@@ -102,6 +101,7 @@ if st.button("Start") and url:
                 )
         else:
             st.warning(f"Clip not found: {clip_path}")
+
     step += 1
     update_progress()
 
