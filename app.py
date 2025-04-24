@@ -77,31 +77,4 @@ if st.button("Start") and url:
         st.stop()
 
     # Step 4: Generate clips
-    st.info(f"✂️ Generating {len(times[:6])} highlight clips...")
-    try:
-        clips = crop_and_export_clips(trimmed_video, times)
-        if not clips:
-            st.warning("⚠️ No clips were successfully generated.")
-            st.stop()
-        update_progress("Clips Exported")
-    except Exception as e:
-        st.error(f"❌ Clip export failed: {e}")
-        st.stop()
-
-    # Step 5: Preview & download
-    st.success("🚀 All clips ready!")
-    st.markdown("### 🎞️ Preview Clips")
-    for i, clip_path in enumerate(clips):
-        st.video(clip_path)
-        with st.expander(f"Optional: Download Clip {i+1}"):
-            with open(clip_path, "rb") as f:
-                st.download_button(
-                    label=f"⬇️ Download Clip {i+1}",
-                    data=f,
-                    file_name=os.path.basename(clip_path),
-                    mime="video/mp4"
-                )
-    update_progress("Complete")
-
-else:
-    st.caption("⚠️ Paste a valid YouTube video URL and click Start.")
+    st.info(f
