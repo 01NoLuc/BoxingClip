@@ -1,12 +1,15 @@
 import streamlit as st
-import os, time, threading
+import os
+import time
+import threading
 from downloader import download_video
 from analyzer import detect_highlight_times, detect_fight_bounds
-from clipper import crop_and_export_clips, trim_video_parallel
+from clipper import crop_and_export_clips_parallel, trim_video_parallel
 
 # Set up the page with a sleek, luxury design
 st.set_page_config(page_title="Boxing Clip Generator", layout="wide")
 
+# Custom styling for the page
 st.markdown("""
     <style>
     body, .stApp {
@@ -58,7 +61,8 @@ if st.button("Start") and url:
         thread.start()
         
         while thread.is_alive():
-            time.sleep(0.25)
+            st.image("static/loader.gif", width=250)  # Optional loader gif
+            time.sleep(0.2)
         thread.join()
 
         if result["error"]:
@@ -91,10 +95,10 @@ if st.button("Start") and url:
         st.error(f"❌ Highlight detection failed: {e}")
         st.stop()
 
-    # Step 4: Generate clips from detected highlight times
+    # Step 4: Generate clips
     st.info(f"✂️ Generating {len(times[:6])} clips...")
     try:
-        clips = crop_and_export_clips(trimmed_video, times[:6])  # limit to 6 clips
+        clips = crop_and_export_clips_parallel(trimmed_video, times[:6])  # limit to 6 clips
         if not clips:
             st.warning("⚠️ No clips generated.")
             st.stop()
