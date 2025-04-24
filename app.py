@@ -1,21 +1,28 @@
 import streamlit as st
 import os
-import threading
-import time
 from downloader import download_video
 from analyzer import detect_highlight_times, detect_fight_bounds
 from clipper import crop_and_export_clips, trim_video
+import threading
+import time
 
 st.set_page_config(page_title="Boxing Clip Generator", layout="centered")
 st.title("🥊 Boxing Clip Generator")
 
 url = st.text_input("Paste YouTube Video URL below:")
 
+# Step tracker values
+total_steps = 5
+step = 0
+
+# Show initial progress bar
+progress_bar = st.progress(0)
+def update_progress():
+    progress_bar.progress(step / total_steps)
+
 if st.button("Start") and url:
     with st.status("📥 Downloading video... Please wait", expanded=True) as status:
-        progress = st.progress(0)
         percent = 0
-
         result = {"video_path": None, "error": None}
 
         def download_wrapper():
@@ -29,7 +36,6 @@ if st.button("Start") and url:
 
         while thread.is_alive():
             percent = min(percent + 1, 99)
-            progress.progress(percent / 100.0)
             time.sleep(0.1)
 
         thread.join()
@@ -39,36 +45,51 @@ if st.button("Start") and url:
             st.stop()
 
         video_path = result["video_path"]
-        progress.progress(1.0)
         status.update(label="✅ Download complete", state="complete")
+        step += 1
+        update_progress()
 
     if not os.path.exists(video_path.split('%')[0]):
         st.error("Video file not found. Download may have failed.")
         st.stop()
 
     st.info("🔪 Trimming to fight only...")
-    start, end = detect_fight_bounds(video_path)
-    trimmed_video = trim_video(video_path, start, end)
+    try:
+        start, end = detect_fight_bounds(video_path)
+        trimmed_video = trim_video(video_path, start, end)
+        step += 1
+        update_progress()
+    except Exception as e:
+        st.error(f"❌ Trimming failed: {e}")
+        st.stop()
 
     st.info("🧠 Analyzing highlights...")
-    times = detect_highlight_times(trimmed_video)
-    st.write("Highlight times detected:", times)
-
-    if not times:
-        st.warning("⚠️ No highlights detected. Try a different video.")
+    try:
+        times = detect_highlight_times(trimmed_video)
+        st.write("Highlight times detected:", times)
+        if not times:
+            st.warning("⚠️ No highlights detected. Try a different video.")
+            st.stop()
+        step += 1
+        update_progress()
+    except Exception as e:
+        st.error(f"❌ Highlight detection failed: {e}")
         st.stop()
 
     st.info(f"✂️ Generating {len(times)} highlight clips...")
-    clips = crop_and_export_clips(trimmed_video, times)
-    st.write("Generated clips:", clips)
-
-    if not clips:
-        st.warning("⚠️ No clips were successfully generated.")
+    try:
+        clips = crop_and_export_clips(trimmed_video, times)
+        st.write("Generated clips:", clips)
+        if not clips:
+            st.warning("⚠️ No clips were successfully generated.")
+            st.stop()
+        step += 1
+        update_progress()
+    except Exception as e:
+        st.error(f"❌ Clip export failed: {e}")
         st.stop()
 
     st.success("🚀 All clips ready!")
-    progress = st.progress(0)
-
     for i, clip_path in enumerate(clips):
         if os.path.exists(clip_path):
             st.video(clip_path)
@@ -81,7 +102,8 @@ if st.button("Start") and url:
                 )
         else:
             st.warning(f"Clip not found: {clip_path}")
-        progress.progress((i + 1) / len(clips))
+    step += 1
+    update_progress()
 
 else:
     st.caption("⚠️ Paste a valid YouTube video URL and click Start.")
