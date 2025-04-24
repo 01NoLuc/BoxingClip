@@ -1,10 +1,10 @@
 import streamlit as st
 import os
+import threading
+import time
 from downloader import download_video
 from analyzer import detect_highlight_times, detect_fight_bounds
 from clipper import crop_and_export_clips, trim_video
-import threading
-import time
 
 st.set_page_config(page_title="Boxing Clip Generator", layout="centered")
 st.title("🥊 Boxing Clip Generator")

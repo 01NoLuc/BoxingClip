@@ -7,8 +7,7 @@ def detect_fight_bounds(video_path):
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
 
-    start_time = None
-    end_time = None
+    start_time, end_time = None, None
     frame_idx = 0
 
     while True:
@@ -16,11 +15,11 @@ def detect_fight_bounds(video_path):
         if not ret:
             break
 
-        if frame_idx % int(fps * 2) == 0:  # Every 2 seconds
+        if frame_idx % int(fps * 2) == 0:  # Check every ~2 seconds
             results = model(frame, verbose=False)
             for r in results:
                 classes = r.boxes.cls.tolist()
-                people = sum(1 for c in classes if c == 0)
+                people = sum(1 for c in classes if c == 0)  # 'person' class
                 if people >= 2:
                     seconds = frame_idx / fps
                     if start_time is None:
@@ -47,10 +46,11 @@ def detect_highlight_times(video_path):
         if not ret:
             break
 
-        if frame_idx % int(fps * 2) == 0:
+        if frame_idx % int(fps * 1.5) == 0:  # Check every ~1.5 seconds
             results = model(frame, verbose=False)
             for r in results:
                 classes = r.boxes.cls.tolist()
+                # Highlight if we detect a person or any action class
                 if any(c in [0, 1] for c in classes):
                     seconds = frame_idx / fps
                     highlight_times.append(int(seconds))
@@ -60,3 +60,4 @@ def detect_highlight_times(video_path):
 
     cap.release()
     return sorted(set(highlight_times))
+
