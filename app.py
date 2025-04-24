@@ -2,16 +2,18 @@ import streamlit as st
 import os
 import threading
 import time
+
 from downloader import download_video
 from analyzer import detect_highlight_times, detect_fight_bounds
 from clipper import crop_and_export_clips, trim_video
+from preview import generate_preview_clips
 
 st.set_page_config(page_title="Boxing Clip Generator", layout="centered")
 st.title("🥊 Boxing Clip Generator")
 
 url = st.text_input("Paste YouTube Video URL below:")
 
-# Total step count for overall progress
+# Step progress
 total_steps = 5
 step = 0
 progress_bar = st.progress(0)
@@ -51,6 +53,13 @@ if st.button("Start") and url:
     if not os.path.exists(video_path.split('%')[0]):
         st.error("Video file not found. Download may have failed.")
         st.stop()
+
+    st.info("🎞 Generating preview highlights while processing...")
+    previews = generate_preview_clips(video_path)
+    if previews:
+        for i, p in enumerate(previews):
+            st.caption(f"🔍 Clip preview {i+1}")
+            st.video(p)
 
     st.info("🔪 Trimming to fight only...")
     try:
@@ -101,7 +110,6 @@ if st.button("Start") and url:
                 )
         else:
             st.warning(f"Clip not found: {clip_path}")
-
     step += 1
     update_progress()
 
