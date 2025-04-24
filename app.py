@@ -1,15 +1,12 @@
 import streamlit as st
-import os
-import time
-import threading
+import os, time, threading
 from downloader import download_video
 from analyzer import detect_highlight_times, detect_fight_bounds
-from clipper import crop_and_export_clips_parallel, trim_video_parallel
+from clipper import crop_and_export_clips, trim_video_parallel
 
 # Set up the page with a sleek, luxury design
 st.set_page_config(page_title="Boxing Clip Generator", layout="wide")
 
-# Custom styling for the page
 st.markdown("""
     <style>
     body, .stApp {
@@ -61,7 +58,10 @@ if st.button("Start") and url:
         thread.start()
         
         while thread.is_alive():
-            st.image("static/loader.gif", width=250)  # Optional loader gif
+            try:
+                st.image("static/loader.gif", width=250)  # Optional loader gif
+            except FileNotFoundError:
+                st.write("Loader gif not found! Please add a valid gif to 'static/loader.gif'.")
             time.sleep(0.2)
         thread.join()
 
@@ -73,9 +73,9 @@ if st.button("Start") and url:
         status.update(label="✅ Download complete", state="complete")
         update_progress("Download Complete")
 
-    # Step 2: Trim to fight portion
-    st.info("🔪 Trimming fight to remove unnecessary parts...")
+    # Step 2: Trim to fight
     try:
+        st.info("🔪 Trimming fight to remove unnecessary parts...")
         start, end = detect_fight_bounds(video_path)
         trimmed_video = trim_video_parallel(video_path, start, end)
         update_progress("Fight Trimmed")
@@ -83,9 +83,9 @@ if st.button("Start") and url:
         st.error(f"❌ Trimming failed: {e}")
         st.stop()
 
-    # Step 3: Detect highlights in the trimmed video
-    st.info("🧠 Detecting highlights...")
+    # Step 3: Detect highlights
     try:
+        st.info("🧠 Detecting highlights...")
         times = detect_highlight_times(trimmed_video)
         if not times:
             st.warning("⚠️ No highlights detected.")
@@ -96,9 +96,9 @@ if st.button("Start") and url:
         st.stop()
 
     # Step 4: Generate clips
-    st.info(f"✂️ Generating {len(times[:6])} clips...")
     try:
-        clips = crop_and_export_clips_parallel(trimmed_video, times[:6])  # limit to 6 clips
+        st.info(f"✂️ Generating {len(times[:6])} clips...")
+        clips = crop_and_export_clips(trimmed_video, times[:6])  # limit to 6 clips
         if not clips:
             st.warning("⚠️ No clips generated.")
             st.stop()
@@ -107,8 +107,9 @@ if st.button("Start") and url:
         st.error(f"❌ Clip export failed: {e}")
         st.stop()
 
-    # Step 5: Preview clips and provide download options
-    st.success("🚀 All clips ready! Preview below:")
+    # Step 5: Preview & download
+    st.success("🚀 All clips ready!")
+    st.markdown("### 🎞️ Preview Clips")
     for i, clip_path in enumerate(clips):
         st.video(clip_path)
         with st.expander(f"⬇️ Download Clip {i+1}"):
