@@ -1,0 +1,12 @@
+venv/
+venv311/
+__pycache__/
+*.pyc
+clips/
+downloads/
+*.mp4
+*.mkv
+*.avi
+.DS_Store
+.idea/
+.env
