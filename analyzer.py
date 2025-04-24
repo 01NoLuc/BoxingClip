@@ -1,12 +1,43 @@
 from ultralytics import YOLO
 import cv2
 
-def detect_highlight_times(video_path):
-    model = YOLO("yolov8n.pt")  # Load model inside the function
+def detect_fight_bounds(video_path):
+    model = YOLO("yolov8n.pt")
 
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    start_time = None
+    end_time = None
+    frame_idx = 0
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if frame_idx % int(fps * 2) == 0:  # Every 2 seconds
+            results = model(frame, verbose=False)
+            for r in results:
+                classes = r.boxes.cls.tolist()
+                people = sum(1 for c in classes if c == 0)
+                if people >= 2:
+                    seconds = frame_idx / fps
+                    if start_time is None:
+                        start_time = seconds
+                    end_time = seconds
+
+        frame_idx += 1
+
+    cap.release()
+    return int(start_time or 0), int(end_time or 0)
+
+
+def detect_highlight_times(video_path):
+    model = YOLO("yolov8n.pt")
+
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
 
     highlight_times = []
     frame_idx = 0
@@ -16,16 +47,16 @@ def detect_highlight_times(video_path):
         if not ret:
             break
 
-        results = model(frame, verbose=False)
-        for r in results:
-            classes = r.boxes.cls.tolist()
-            if any(c in [0, 1] for c in classes):  # Detect person/fight presence
-                seconds = frame_idx / fps
-                highlight_times.append(seconds)
-                break
+        if frame_idx % int(fps * 2) == 0:
+            results = model(frame, verbose=False)
+            for r in results:
+                classes = r.boxes.cls.tolist()
+                if any(c in [0, 1] for c in classes):
+                    seconds = frame_idx / fps
+                    highlight_times.append(int(seconds))
+                    break
 
-        frame_idx += 30  # Skip every ~1 second at 30fps for speed
+        frame_idx += 1
 
     cap.release()
-
-    return sorted(set(int(t) for t in highlight_times))
+    return sorted(set(highlight_times))
