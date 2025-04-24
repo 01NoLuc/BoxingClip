@@ -2,9 +2,9 @@ from ultralytics import YOLO
 from pathlib import Path
 import cv2
 
-# Load the model from the same folder as this script
+# Load the YOLOv8n model from local path
 model_path = Path(__file__).resolve().parent / "yolov8n.pt"
-model = YOLO(str(model_path))
+model = YOLO(str(model_path))  # Load once globally for speed
 
 def detect_fight_bounds(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -39,10 +39,10 @@ def detect_highlight_times(video_path):
         ret, frame = cap.read()
         if not ret:
             break
-        if frame_idx % int(fps * 2) == 0:
+        if frame_idx % int(fps * 2) == 0:  # every 2 seconds
             results = model(frame, verbose=False)
             for r in results:
-                if any(c in [0, 1] for c in r.boxes.cls.tolist()):
+                if any(c in [0, 1] for c in r.boxes.cls.tolist()):  # Person or glove
                     highlights.add(int(frame_idx / fps))
                     break
         frame_idx += 1
