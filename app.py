@@ -79,7 +79,7 @@ if st.button("Start") and url:
         st.error(f"❌ Trimming failed: {e}")
         st.stop()
 
-    # Step 3: Detect highlights
+    # Step 3: Detect highlights in the trimmed video
     st.info("🧠 Detecting highlights...")
     try:
         times = detect_highlight_times(trimmed_video)
