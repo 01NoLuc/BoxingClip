@@ -15,29 +15,23 @@ def detect_fight_bounds(video_path):
         if not ret:
             break
 
-        if frame_idx % int(fps * 2) == 0:  # Every 2 seconds
+        # Analyze every 6 seconds instead of every 2 for speed
+        if frame_idx % int(fps * 6) == 0:
+            print(f"Analyzing frame {frame_idx}...")
             results = model(frame, verbose=False)
             for r in results:
                 classes = r.boxes.cls.tolist()
-                people = sum(1 for c in classes if c == 0)
+                people = sum(1 for c in classes if c == 0)  # Class 0 = person
                 if people >= 2:
                     seconds = frame_idx / fps
                     if start_time is None:
-                        print(f"[🟢 START] Detected at {seconds}s")
                         start_time = seconds
-                    print(f"[🟢 UPDATE] Detected at {seconds}s")
                     end_time = seconds
 
         frame_idx += 1
 
     cap.release()
-
-    if start_time is None or end_time is None:
-        print("[❌ ERROR] Could not detect clear fight bounds.")
-        return 0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT) / fps)  # default to full video
-
-    print(f"[✅ BOUNDS] Fight from {start_time}s to {end_time}s")
-    return int(start_time), int(end_time)
+    return int(start_time or 0), int(end_time or 0)
 
 
 def detect_highlight_times(video_path):
@@ -57,7 +51,7 @@ def detect_highlight_times(video_path):
             results = model(frame, verbose=False)
             for r in results:
                 classes = r.boxes.cls.tolist()
-                if any(c in [0, 1] for c in classes):  # person or glove/etc
+                if any(c in [0, 1] for c in classes):  # 0: person, 1: boxing glove if trained
                     seconds = frame_idx / fps
                     highlight_times.append(int(seconds))
                     break
