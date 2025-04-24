@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 import cv2
 
-model = YOLO("yolov8n.pt")  # load once globally
+model = YOLO("yolov8n")  # auto-downloads model if missing
 
 def detect_fight_bounds(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -36,7 +36,7 @@ def detect_highlight_times(video_path):
         ret, frame = cap.read()
         if not ret:
             break
-        if frame_idx % int(fps * 2) == 0:  # check every 2 seconds
+        if frame_idx % int(fps * 2) == 0:  # every ~2 seconds
             results = model(frame, verbose=False)
             for r in results:
                 if any(c in [0, 1] for c in r.boxes.cls.tolist()):
