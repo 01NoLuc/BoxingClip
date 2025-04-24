@@ -1,25 +1,28 @@
 import yt_dlp
 import os
-import re
-
-def sanitize_filename(name):
-    return re.sub(r'[\\/*?:"<>|：｜]', "", name)
 
 def download_video(url, output_dir="downloads"):
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "%(title).80s.%(ext)s")
+    output_path = os.path.join(output_dir, "%(title).70s.%(ext)s")
 
     ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
         'outtmpl': output_path,
-        'quiet': True,
+        'merge_output_format': 'mp4',
+        'quiet': False,
+        'noplaylist': True,
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4'
+            'preferedformat': 'mp4',
         }]
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-
-    return output_path
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filepath = ydl.prepare_filename(info).replace(".webm", ".mp4").replace(".mkv", ".mp4")
+            if not os.path.exists(filepath) or os.path.getsize(filepath) < 1000:
+                raise Exception("The downloaded file is empty or corrupted.")
+            return filepath
+    except Exception as e:
+        raise Exception(f"❌ Download failed: {e}")
