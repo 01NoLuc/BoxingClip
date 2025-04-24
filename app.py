@@ -58,8 +58,7 @@ if st.button("Start") and url:
         thread.start()
         
         while thread.is_alive():
-            st.image("static/loader.gif", width=250)  # Optional loader gif
-            time.sleep(0.2)
+            time.sleep(0.25)
         thread.join()
 
         if result["error"]:
@@ -80,7 +79,7 @@ if st.button("Start") and url:
         st.error(f"❌ Trimming failed: {e}")
         st.stop()
 
-    # Step 3: Detect highlights in the trimmed video
+    # Step 3: Detect highlights
     st.info("🧠 Detecting highlights...")
     try:
         times = detect_highlight_times(trimmed_video)
