@@ -8,27 +8,52 @@ from clipper import crop_and_export_clips, trim_video
 
 st.set_page_config(page_title="Boxing Clip Generator", layout="wide")
 
-# Optional: Custom styling if you have a CSS file
-if os.path.exists("luxury_style.css"):
-    with open("luxury_style.css") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# Custom black & white luxury styles
+st.markdown("""
+    <style>
+    body {
+        background-color: #000000;
+        color: #FFFFFF;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .luxury-title {
+        font-size: 3em;
+        font-weight: bold;
+        color: white;
+        letter-spacing: 2px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .stButton>button {
+        background-color: white;
+        color: black;
+        border: 2px solid black;
+        font-weight: bold;
+    }
+    .stDownloadButton>button {
+        background-color: black;
+        color: white;
+        border: 1px solid white;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 st.markdown("<h1 class='luxury-title'>🥊 Boxing Clip Generator</h1>", unsafe_allow_html=True)
 
 url = st.text_input("Paste YouTube Video URL below:", placeholder="https://www.youtube.com/watch?v=...")
 
-# Step tracker
 total_steps = 5
 step = 0
 progress_bar = st.progress(0)
 
-def update_progress(status_message):
+def update_progress(s):
     global step
     step += 1
-    st.write(status_message)
+    st.write(s)
     progress_bar.progress(step / total_steps)
 
 if st.button("Start") and url:
+    # Step 1: Download
     with st.status("📥 Downloading video... Please wait", expanded=True) as status:
         result = {"video_path": None, "error": None}
 
@@ -42,7 +67,6 @@ if st.button("Start") and url:
         thread.start()
 
         while thread.is_alive():
-            st.image("static/loader.gif", width=250)  # Optional animated placeholder
             time.sleep(0.2)
         thread.join()
 
@@ -52,43 +76,43 @@ if st.button("Start") and url:
 
         video_path = result["video_path"]
         status.update(label="✅ Download complete", state="complete")
-        update_progress("✅ Download Complete")
+        update_progress("Download Complete")
 
-    if not os.path.exists(video_path):
-        st.error("Video file not found. Download may have failed.")
-        st.stop()
-
+    # Step 2: Trim to fight
     st.info("🔪 Trimming to fight only...")
     try:
         start, end = detect_fight_bounds(video_path)
         trimmed_video = trim_video(video_path, start, end)
-        update_progress("✅ Fight Trimmed")
+        update_progress("Fight Trimmed")
     except Exception as e:
         st.error(f"❌ Trimming failed: {e}")
         st.stop()
 
+    # Step 3: Highlight detection
     st.info("🧠 Analyzing highlights...")
     try:
         times = detect_highlight_times(trimmed_video)
         if not times:
             st.warning("⚠️ No highlights detected. Try a different video.")
             st.stop()
-        update_progress("✅ Highlights Detected")
+        update_progress("Highlights Detected")
     except Exception as e:
         st.error(f"❌ Highlight detection failed: {e}")
         st.stop()
 
+    # Step 4: Generate clips
     st.info(f"✂️ Generating {len(times[:6])} highlight clips...")
     try:
         clips = crop_and_export_clips(trimmed_video, times)
         if not clips:
             st.warning("⚠️ No clips were successfully generated.")
             st.stop()
-        update_progress("✅ Clips Exported")
+        update_progress("Clips Exported")
     except Exception as e:
         st.error(f"❌ Clip export failed: {e}")
         st.stop()
 
+    # Step 5: Preview & download
     st.success("🚀 All clips ready!")
     st.markdown("### 🎞️ Preview Clips")
     for i, clip_path in enumerate(clips):
@@ -101,7 +125,7 @@ if st.button("Start") and url:
                     file_name=os.path.basename(clip_path),
                     mime="video/mp4"
                 )
-    update_progress("✅ All Done")
+    update_progress("Complete")
 
 else:
     st.caption("⚠️ Paste a valid YouTube video URL and click Start.")
